@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+.venv/
+.env
+.DS_Store
+*.pem
+data/catalogs/*
+!data/catalogs/.gitkeep
+data/extracted/
+data/queries/
+data/eval/customer/images/
+coverage/
+tsconfig.tsbuildinfo

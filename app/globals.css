@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #161310;
+  --color-ink-soft: #3d3730;
+  --color-paper: #f4efe6;
+  --color-paper-2: #ebe3d4;
+  --color-card: #fffdf8;
+  --color-line: #d9cfc0;
+  --color-brass: #9a7840;
+  --color-brass-soft: #f0e4cc;
+  --color-high: #2f6b45;
+  --color-possible: #8a5a12;
+  --color-low: #6b645c;
+}
+
+html {
+  background: var(--color-paper);
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgba(154, 120, 64, 0.12), transparent 50%),
+    var(--color-paper);
+  color: var(--color-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+::selection {
+  background: var(--color-brass-soft);
+}

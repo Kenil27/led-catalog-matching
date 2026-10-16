@@ -1,0 +1,5 @@
+{
+  "type": "customer-photo",
+  "note": "Add files under data/eval/customer/images/ (gitignored) and list them here. This is not catalog holdout.",
+  "cases": []
+}
