@@ -5,6 +5,7 @@ import { getQdrantClient } from "@/lib/qdrant/collection";
 import { payloadFromUnknown } from "@/lib/qdrant/payload";
 import { aggregateBestPerProduct } from "@/lib/search/aggregate";
 import { matchLevelFromScore, type MatchLevel } from "@/lib/search/match-level";
+import { applyRelevanceGate } from "@/lib/search/relevance-gate";
 
 export type SearchProductResult = {
   productId: string;
@@ -34,6 +35,9 @@ export type SearchResponse = {
     latencyMs: number;
     imageHitsConsidered: number;
     matchLevelNote: string;
+    topSimilarityScore?: number;
+    relevanceRejected?: boolean;
+    relevanceMessage?: string;
   };
 };
 
@@ -44,6 +48,8 @@ export async function searchProducts(input: {
   embeddingProvider?: EmbeddingProvider;
   limit?: number;
   excludeImageIds?: string[];
+  /** When true (default for uploads), hide results if nothing is similar enough. */
+  applyRelevanceGate?: boolean;
 }): Promise<SearchResponse> {
   await ensureCatalogLoaded();
   const started = Date.now();
@@ -80,9 +86,9 @@ export async function searchProducts(input: {
     ];
   });
 
-  const aggregated = aggregateBestPerProduct(hits).slice(0, limit);
-  return {
-    results: aggregated.map((hit) => {
+  const mapped = aggregateBestPerProduct(hits)
+    .slice(0, limit)
+    .map((hit) => {
       const record = getCatalogProduct(hit.productId);
       return {
         productId: hit.productId,
@@ -103,7 +109,15 @@ export async function searchProducts(input: {
         catalogFileName: record?.catalogFileName ?? hit.catalogFileName,
         pageNumber: record?.pageNumber ?? hit.pageNumber,
       };
-    }),
+    });
+
+  const useGate = input.applyRelevanceGate !== false;
+  const gated = useGate
+    ? applyRelevanceGate(mapped, appConfig.searchMinSimilarity)
+    : { results: mapped, rejected: false, topSimilarityScore: mapped[0]?.similarityScore ?? 0 };
+
+  return {
+    results: gated.results,
     meta: {
       embeddingModel: input.embeddingProvider?.modelId ?? appConfig.embeddingModel,
       vectorSize: vector.length,
@@ -111,6 +125,11 @@ export async function searchProducts(input: {
       imageHitsConsidered: hits.length,
       matchLevelNote:
         "matchLevel is an uncalibrated Phase 1 retrieval bucket (high>=0.75, possible>=0.60, else low), not a probability.",
+      topSimilarityScore: gated.topSimilarityScore,
+      relevanceRejected: gated.rejected,
+      relevanceMessage: gated.rejected
+        ? `No catalog light matched this photo (best similarity ${(gated.topSimilarityScore * 100).toFixed(0)}%). Try a clearer, well-lit light photo or a catalog example.`
+        : undefined,
     },
   };
 }

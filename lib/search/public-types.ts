@@ -28,5 +28,8 @@ export type PublicSearchResponse = {
     latencyMs: number;
     imageHitsConsidered: number;
     matchLevelNote: string;
+    topSimilarityScore?: number;
+    relevanceRejected?: boolean;
+    relevanceMessage?: string;
   };
 };

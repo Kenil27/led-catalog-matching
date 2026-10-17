@@ -6,6 +6,12 @@ function readPositiveInt(value: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function readUnitFloat(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 1) return fallback;
+  return parsed;
+}
+
 export function loadLocalEnvFile(): void {
   if (typeof process === "undefined") return;
   const envPath = path.join(process.cwd(), ".env");
@@ -59,4 +65,9 @@ export const appConfig = {
   maxUploadBytes: readPositiveInt(process.env.MAX_UPLOAD_BYTES, 10 * 1024 * 1024),
   maxUploadDimension: readPositiveInt(process.env.MAX_UPLOAD_DIMENSION, 8192),
   minUploadDimension: readPositiveInt(process.env.MIN_UPLOAD_DIMENSION, 64),
+  /** Minimum top-1 cosine similarity to show catalog matches for customer uploads. */
+  searchMinSimilarity: readUnitFloat(
+    process.env.SEARCH_MIN_SIMILARITY,
+    0.6,
+  ),
 };

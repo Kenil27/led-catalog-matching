@@ -49,6 +49,7 @@ export async function POST(request: Request): Promise<Response> {
         queryVector: await retrieveIndexedVector(found.image.contentHash),
         limit,
         excludeImageIds: [found.image.imageId],
+        applyRelevanceGate: false,
       });
       return NextResponse.json(toPublicSearchResponse(result));
     }

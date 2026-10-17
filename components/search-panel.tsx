@@ -10,6 +10,8 @@ type Status = "idle" | "searching" | "done" | "error";
 export function SearchPanel() {
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const resultsSectionRef = useRef<HTMLElement>(null);
+  const errorRef = useRef<HTMLParagraphElement>(null);
   const previewUrl = useRef<string | undefined>(undefined);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | undefined>();
@@ -31,6 +33,22 @@ export function SearchPanel() {
     };
   }, []);
 
+  useEffect(() => {
+    if (status === "searching") {
+      const frame = requestAnimationFrame(() => {
+        resultsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+    if (status === "error" && error) {
+      const frame = requestAnimationFrame(() => {
+        errorRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+    return undefined;
+  }, [status, error]);
+
   function setChosenFile(next: File | null) {
     if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
     previewUrl.current = next ? URL.createObjectURL(next) : undefined;
@@ -44,6 +62,7 @@ export function SearchPanel() {
   async function runSearch(body: FormData) {
     setStatus("searching");
     setError(undefined);
+    setResponse(undefined);
     try {
       const res = await fetch("/api/search?limit=8", { method: "POST", body });
       const payload = (await res.json()) as PublicSearchResponse & { error?: string };
@@ -100,7 +119,7 @@ export function SearchPanel() {
             <img src={preview} alt="Selected query" className="max-h-80 w-full object-contain" />
           ) : (
             <div className="space-y-2">
-              <p className="text-lg font-medium">Drop a photo of the lamp</p>
+              <p className="text-lg font-medium">Drop a photo of the light</p>
               <p className="text-sm text-ink-soft">JPEG, PNG, or WEBP. Nothing is stored after search.</p>
             </div>
           )}
@@ -108,17 +127,26 @@ export function SearchPanel() {
         <input
           ref={inputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png,image/webp,.webp"
           className="sr-only"
           onChange={(event) => setChosenFile(event.target.files?.[0] ?? null)}
         />
         <input
           ref={cameraRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/*"
           capture="environment"
           className="sr-only"
-          onChange={(event) => setChosenFile(event.target.files?.[0] ?? null)}
+          onChange={(event) => {
+            const chosen = event.target.files?.[0] ?? null;
+            setChosenFile(chosen);
+            event.target.value = "";
+            if (chosen) {
+              const body = new FormData();
+              body.append("image", chosen);
+              void runSearch(body);
+            }
+          }}
         />
         <div className="flex flex-wrap gap-3">
           <button
@@ -126,7 +154,7 @@ export function SearchPanel() {
             onClick={() => inputRef.current?.click()}
             className="rounded-full border border-line bg-card px-4 py-2 text-sm"
           >
-            Choose photo
+            Choose photo from gallery
           </button>
           <button
             type="button"
@@ -145,9 +173,65 @@ export function SearchPanel() {
         </div>
       </form>
 
+      {error ? (
+        <p
+          ref={errorRef}
+          className="scroll-mt-24 rounded-xl border border-line bg-brass-soft/60 px-4 py-3 text-sm"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
+
+      {status === "searching" || response ? (
+        <section
+          ref={resultsSectionRef}
+          className="scroll-mt-24 space-y-4"
+          aria-busy={status === "searching"}
+          aria-live="polite"
+        >
+          {status === "searching" ? (
+            <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-line bg-card px-6 py-14">
+              <div
+                className="size-10 animate-spin rounded-full border-2 border-line border-t-ink"
+                aria-hidden
+              />
+              <p className="text-sm font-medium text-ink">Searching the catalog…</p>
+              <p className="text-xs text-ink-soft">Comparing your photo to indexed products</p>
+            </div>
+          ) : response ? (
+            <>
+              <div>
+                <h2 className="text-xl font-semibold">Closest catalog products</h2>
+                <p className="mt-1 text-sm text-ink-soft">
+                  Labels are uncalibrated similarity buckets, not probabilities. List prices are not shown.
+                </p>
+              </div>
+              {response.meta.relevanceRejected ? (
+                <p
+                  className="rounded-xl border border-line bg-paper-2 px-4 py-3 text-sm text-ink-soft"
+                  role="status"
+                >
+                  {response.meta.relevanceMessage ??
+                    "This photo does not look close enough to any catalog light. Upload a light or use a catalog example."}
+                </p>
+              ) : response.results.length === 0 ? (
+                <p className="text-sm text-ink-soft">No similar products found.</p>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {response.results.map((result) => (
+                    <ProductCard key={result.productId} result={result} />
+                  ))}
+                </div>
+              )}
+            </>
+          ) : null}
+        </section>
+      ) : null}
+
       {examples.length > 0 ? (
         <section className="space-y-3">
-          <h2 className="text-sm font-medium text-ink-soft">Or try a catalog photo</h2>
+          <h2 className="text-sm font-medium text-ink-soft">Try a catalog photo</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {examples.map((example) => (
               <button
@@ -162,32 +246,6 @@ export function SearchPanel() {
               </button>
             ))}
           </div>
-        </section>
-      ) : null}
-
-      {error ? (
-        <p className="rounded-xl border border-line bg-brass-soft/60 px-4 py-3 text-sm" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {response ? (
-        <section className="space-y-4">
-          <div>
-            <h2 className="text-xl font-semibold">Closest catalog products</h2>
-            <p className="mt-1 text-sm text-ink-soft">
-              Labels are uncalibrated similarity buckets, not probabilities. List prices are not shown.
-            </p>
-          </div>
-          {response.results.length === 0 ? (
-            <p className="text-sm text-ink-soft">No similar products found.</p>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {response.results.map((result) => (
-                <ProductCard key={result.productId} result={result} />
-              ))}
-            </div>
-          )}
         </section>
       ) : null}
     </div>

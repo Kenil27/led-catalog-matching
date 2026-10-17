@@ -3,8 +3,8 @@ import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = {
-  title: "Find this lamp",
-  description: "Photograph a light to find the closest catalog products.",
+  title: "Find the light",
+  description: "Find the light",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

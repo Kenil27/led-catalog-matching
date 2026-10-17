@@ -1,6 +1,6 @@
 # LED catalog matching
 
-Visual catalog search: upload a lamp photo → similar products from ingested PDF catalogs.
+Visual catalog search: upload a light photo → similar products from ingested PDF catalogs.
 
 ## Local setup
 
@@ -33,8 +33,8 @@ Smoke test: `GET /api/health`
 
 ## Scripts
 
-| Command | Purpose |
-| --- | --- |
-| `npm run ingest:catalog` | Extract PDFs, embed, upsert Qdrant, write `catalog.json` |
-| `npm run publish:assets` | Upload images + catalog to Vercel Blob for production |
-| `npm run evaluate:holdout` | Catalog holdout retrieval metrics |
+| Command                    | Purpose                                                  |
+| -------------------------- | -------------------------------------------------------- |
+| `npm run ingest:catalog`   | Extract PDFs, embed, upsert Qdrant, write `catalog.json` |
+| `npm run publish:assets`   | Upload images + catalog to Vercel Blob for production    |
+| `npm run evaluate:holdout` | Catalog holdout retrieval metrics                        |
