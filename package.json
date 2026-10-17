@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "ingest:catalog": "tsx scripts/ingest-catalog.ts",
+    "catalogs:bootstrap": "tsx scripts/bootstrap-catalogs-manifest.ts",
     "publish:assets": "tsx scripts/publish-catalog-assets.ts",
     "evaluate:holdout": "tsx scripts/evaluate-holdout.ts"
   },

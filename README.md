@@ -36,5 +36,6 @@ Smoke test: `GET /api/health`
 | Command                    | Purpose                                                  |
 | -------------------------- | -------------------------------------------------------- |
 | `npm run ingest:catalog`   | Extract PDFs, embed, upsert Qdrant, write `catalog.json` |
-| `npm run publish:assets`   | Upload images + catalog to Vercel Blob for production    |
+| `npm run catalogs:bootstrap` | Build `catalogs.json` registry from `catalog.json`     |
+| `npm run publish:assets`   | Upload images + catalog + manifest to Vercel Blob        |
 | `npm run evaluate:holdout` | Catalog holdout retrieval metrics                        |

@@ -83,6 +83,7 @@ Optional: `BLOB_PREFIX=led-catalog` (default) changes the folder prefix in Blob.
 | `QDRANT_API_KEY` | Qdrant API key |
 | `QDRANT_COLLECTION` | `catalog_products` |
 | `CATALOG_JSON_URL` | Public store only — from `vercel-env.hints.txt` |
+| `CATALOG_MANIFEST_URL` | Optional — `catalogs.json` on Blob; auto-derived from `CATALOG_JSON_URL` if omitted |
 | `CATALOG_ASSET_BASE_URL` | Public store only — from `vercel-env.hints.txt` |
 | `BLOB_STORE_ACCESS` | `private` if using a private Blob store |
 | `BLOB_PREFIX` | `led-catalog` (match publish) |
@@ -110,7 +111,7 @@ Expect `"ok": true`, `"products": 317`, `"qdrantReady": true`.
 
 1. Add PDFs under `data/catalogs/`.
 2. `npm run ingest:catalog` (local, `QDRANT_URL` = cloud).
-3. `npm run publish:assets` (refresh Blob + `CATALOG_JSON_URL` if the catalog URL changed).
+3. `npm run catalogs:bootstrap` then `npm run publish:assets` (refresh Blob + JSON URLs if changed).
 4. Redeploy Vercel only if env vars changed (otherwise Blob + Qdrant updates are live immediately).
 
 New PDF layouts still need a new ingest **template** before ingest.

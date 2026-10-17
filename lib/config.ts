@@ -57,6 +57,8 @@ export const appConfig = {
   extractedDir: process.env.EXTRACTED_DIR ?? "./data/extracted",
   /** Remote catalog.json for Vercel (no local extract tree). */
   catalogJsonUrl: process.env.CATALOG_JSON_URL?.trim() || undefined,
+  /** Registry of PDF catalogs (catalogs.json). Falls back to sibling of CATALOG_JSON_URL. */
+  catalogManifestUrl: process.env.CATALOG_MANIFEST_URL?.trim() || undefined,
   /** Public CDN/Blob prefix, e.g. https://….blob.vercel-storage.com/led-catalog */
   catalogAssetBaseUrl: process.env.CATALOG_ASSET_BASE_URL?.replace(/\/$/, "") || undefined,
   blobReadWriteToken: process.env.BLOB_READ_WRITE_TOKEN?.trim() || undefined,

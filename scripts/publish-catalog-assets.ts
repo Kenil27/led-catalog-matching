@@ -9,12 +9,19 @@ import path from "node:path";
 import { put } from "@vercel/blob";
 import { assetKeyFromImagePath } from "@/lib/catalog/asset-path";
 import { appConfig, loadLocalEnvFile } from "@/lib/config";
+import { readManifestFile } from "@/lib/catalog/manifest-io";
 import type { CatalogRecord } from "@/lib/catalog/store";
 
 loadLocalEnvFile();
 
 const PREFIX = (process.env.BLOB_PREFIX ?? appConfig.blobPrefix).replace(/^\/+|\/+$/g, "");
 const ACCESS = appConfig.blobStoreAccess;
+
+const PUT_OPTS = {
+  access: ACCESS,
+  addRandomSuffix: false,
+  allowOverwrite: true,
+} as const;
 
 async function main(): Promise<void> {
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
@@ -46,8 +53,7 @@ async function main(): Promise<void> {
       const bytes = await fs.readFile(filePath);
       const blobPath = `${PREFIX}/${key}`;
       const result = await put(blobPath, bytes, {
-        access: ACCESS,
-        addRandomSuffix: false,
+        ...PUT_OPTS,
         contentType: key.endsWith(".png") ? "image/png" : "image/jpeg",
       });
       if (ACCESS === "public" && !assetBaseUrl) {
@@ -63,10 +69,22 @@ async function main(): Promise<void> {
 
   const catalogPayload = JSON.stringify({ products }, null, 2);
   const catalogBlob = await put(`${PREFIX}/catalog.json`, catalogPayload, {
-    access: ACCESS,
-    addRandomSuffix: false,
+    ...PUT_OPTS,
     contentType: "application/json",
   });
+
+  const manifest = await readManifestFile();
+  if (!manifest) {
+    console.warn(
+      "Warning: data/extracted/catalogs.json missing. Run npm run catalogs:bootstrap before publish.",
+    );
+  } else {
+    const manifestBlob = await put(`${PREFIX}/catalogs.json`, JSON.stringify(manifest, null, 2), {
+      ...PUT_OPTS,
+      contentType: "application/json",
+    });
+    console.log(`catalogs.json → ${manifestBlob.url}`);
+  }
 
   const deployHints = path.join(appConfig.extractedDir, "vercel-env.hints.txt");
   const shared = [
@@ -87,6 +105,7 @@ async function main(): Promise<void> {
       ? [
           ...shared.slice(0, 1),
           `CATALOG_JSON_URL=${catalogBlob.url}`,
+          `CATALOG_MANIFEST_URL=${catalogBlob.url.replace(/\/catalog\.json$/, "/catalogs.json")}`,
           `CATALOG_ASSET_BASE_URL=${assetBaseUrl ?? `https://<blob-host>/${PREFIX}`}`,
           ...shared.slice(1),
         ].join("\n")
